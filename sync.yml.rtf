@@ -1,0 +1,59 @@
+{\rtf1\ansi\ansicpg936\cocoartf2761
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 name: Sync upstream Clash config and add anti-AD\
+\
+# \uc0\u25163 \u21160 \u35302 \u21457 \u25110 \u27599 \u22825 \u33258 \u21160 \u19968 \u27425 \u65288 \u21487 \u25353 \u38656 \u35843 \u25972  cron\u65289 \
+on:\
+  workflow_dispatch:\
+  schedule:\
+    - cron: '0 3 * * *'   # \uc0\u27599 \u22825  03:00 UTC\u65288 \u21487 \u25913 \u65289 \
+\
+permissions:\
+  contents: write\
+\
+env:\
+  # \uc0\u40664 \u35748 \u21344 \u20301 \u65292 \u19979 \u38754 \u35831 \u26367 \u25442 \u25104 \u20320 \u35201 \u30340 \u38142 \u25509 \u25110 \u22312 \u20179 \u24211  Secrets/Settings \u20013 \u26367 \u25442 \
+  UPSTREAM_URL: 'https://raw.githubusercontent.com/<UPSTREAM_USER>/<UPSTREAM_REPO>/main/config.yaml'\
+  ANTI_AD_URL: 'https://raw.githubusercontent.com/privacy-protection-tools/anti-AD/master/anti-ad-clash.yaml'\
+  OUTPUT_FILE: 'config.yaml'\
+  RULE_NAME: 'anti-ad'\
+\
+jobs:\
+  sync:\
+    runs-on: ubuntu-latest\
+    steps:\
+      - uses: actions/checkout@v4\
+        with:\
+          persist-credentials: true\
+          fetch-depth: 0\
+\
+      - name: Setup Python\
+        uses: actions/setup-python@v4\
+        with:\
+          python-version: '3.x'\
+\
+      - name: Install deps\
+        run: |\
+          python -m pip install --upgrade pip\
+          pip install pyyaml requests\
+\
+      - name: Run merge script\
+        run: |\
+          python merge.py\
+\
+      - name: Commit and push if changed\
+        run: |\
+          git config user.name "github-actions[bot]"\
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"\
+          git add $\{\{ env.OUTPUT_FILE \}\} || true\
+          if ! git diff --staged --quiet; then\
+            git commit -m "Auto-sync upstream and add anti-ad (by GitHub Actions)" || true\
+            git push origin HEAD\
+          else\
+            echo "No changes to commit"\
+          fi}
